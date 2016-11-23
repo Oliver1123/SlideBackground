@@ -18,7 +18,7 @@ import android.view.View;
  */
 
 public class SlideBackgroundView extends View {
-    private static final int DEFAULT_UPDATE_DELAY = 1000 / 60;
+    private static final int DEFAULT_UPDATE_DELAY = 1000 / 30;
     private static final String TAG = SlideBackgroundView.class.getSimpleName();
 
     private static final int DEFAULT_ANIMATION_SPEED = 5;
@@ -51,6 +51,8 @@ public class SlideBackgroundView extends View {
     private Matrix mLeftImageMatrix, mRightImageMatrix;
     private float mScaleX;
     private float mScaleY;
+    private int mViewWidth;
+    private int mViewHeight;
 
 
     public SlideBackgroundView(Context context) {
@@ -71,6 +73,14 @@ public class SlideBackgroundView extends View {
     public SlideBackgroundView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init();
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+
+        mViewWidth = getWidth();
+        mViewHeight = getHeight();
     }
 
     private void init() {
@@ -114,24 +124,24 @@ public class SlideBackgroundView extends View {
     }
 
     private void recalcMatrix() {
-        mLeftImageMatrix.reset();
-        // todo scale and save aspect ratio
-        mScaleY = getHeight() / (float)mImageHeight;
-        mScaleX = getWidth() / (float)mImageWidth;
+
+        mScaleY = mViewHeight / (float)mImageHeight;
+        mScaleX = mViewWidth / (float)mImageWidth;
 
         Log.d(TAG, "recalcMatrix: scale x: " + mScaleX + " y: " + mScaleY);
+        mLeftImageMatrix.reset();
         mLeftImageMatrix.setScale(mScaleX, mScaleY);
-        mLeftImageMatrix.postTranslate(-mElapsedTime % getWidth(), 0);
+        mLeftImageMatrix.postTranslate(-mElapsedTime % mViewWidth, 0);
 
         //
         mRightImageMatrix.reset();
         mRightImageMatrix.postScale(mScaleX, mScaleY);
-        mRightImageMatrix.postTranslate(getWidth() - mElapsedTime % getWidth(), 0);
+        mRightImageMatrix.postTranslate(mViewWidth - mElapsedTime % mViewWidth, 0);
     }
 
 
     private void updateImageIndex() {
-        int tmpIndex = (mElapsedTime / getWidth());
+        int tmpIndex = (mElapsedTime / mViewWidth);
         tmpIndex = tmpIndex % mImagesId.length;
         if (tmpIndex != mFirstDisplayedImageIndex) {
             mFirstDisplayedImageIndex = tmpIndex;
@@ -153,12 +163,52 @@ public class SlideBackgroundView extends View {
         }
 
         mRightImage = BitmapFactory.decodeResource(getResources(), mImagesId[(mFirstDisplayedImageIndex + 1) % mImagesId.length]);
+        mLeftImage = getCroppedBitmap(mLeftImage, mViewWidth/ (float)mViewHeight);
+        mRightImage = getCroppedBitmap(mRightImage, mViewWidth/ (float)mViewHeight);
+        mImageWidth = mLeftImage.getWidth();
+        mImageHeight = mLeftImage.getHeight();
         System.gc();
     }
 
-    public void setImagesSize(int width, int height) {
-        mImageWidth = width;
-        mImageHeight = height;
+    /**
+     * crop given bitmap with given dstAspectRatio scaleType center crop
+     * @param frame
+     * @param dstAspectRatio
+     * @return
+     */
+    private static Bitmap getCroppedBitmap(Bitmap frame, float dstAspectRatio) {
+        int frameW = frame.getWidth();
+        int frameH = frame.getHeight();
+        int outputW;
+        int outputH;
+        float frameAspectRatio = frameW / (float) frameH;
+        if (frameAspectRatio == dstAspectRatio) return frame;
 
+
+        if (isPortrait(frameAspectRatio)) {
+            Log.d(TAG, "getCroppedBitmap: frame isPortrait");
+            if (frameAspectRatio > dstAspectRatio) {
+                outputH = frameH;
+                outputW = (int)(frameH * dstAspectRatio);
+            } else {
+                outputW = frameW;
+                outputH = (int)(frameW / dstAspectRatio);
+            }
+        } else {
+            Log.d(TAG, "getCroppedBitmap: frame is Landscape");
+            outputH = frameH;
+            outputW = (int)(frameH * dstAspectRatio);
+        }
+        int startX = frameW / 2 - outputW / 2;
+        int startY = frameH / 2 - outputH / 2;
+        Bitmap result = Bitmap.createBitmap(frame, startX, startY, outputW, outputH);
+        Log.d(TAG, "getCroppedBitmap: outputSizes w: " + outputW + " h: " + outputH);
+
+        frame.recycle();
+        return result;
+    }
+
+    private static boolean isPortrait(float aspectRatio) {
+        return aspectRatio <= 1;
     }
 }

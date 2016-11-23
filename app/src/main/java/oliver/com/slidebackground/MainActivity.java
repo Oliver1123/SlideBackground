@@ -12,7 +12,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         final SlideBackgroundView slideBackgroundView = (SlideBackgroundView) findViewById(R.id.sbv_background_slides);
-        slideBackgroundView.setImagesSize(768, 1366);
         slideBackgroundView.setAnimatedImages(
                 R.drawable.bg1_test,
                 R.drawable.bg2_test,
