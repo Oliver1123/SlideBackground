@@ -12,7 +12,17 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         final SlideBackgroundView slideBackgroundView = (SlideBackgroundView) findViewById(R.id.sbv_background_slides);
-
+        slideBackgroundView.setImagesSize(768, 1366);
+        slideBackgroundView.setAnimatedImages(
+                R.drawable.bg1_test,
+                R.drawable.bg2_test,
+                R.drawable.bg3,
+                R.drawable.bg4,
+                R.drawable.bg5,
+                R.drawable.bg6,
+                R.drawable.bg7,
+                R.drawable.bg8
+        );
         slideBackgroundView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
